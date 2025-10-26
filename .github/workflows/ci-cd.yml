@@ -1,30 +1,41 @@
-﻿name: CI/CD with Docker Compose
+﻿name: CI/CD Docker ASP.NET MVC
 
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
-      # 1️⃣ Checkout repository code
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v3
 
-      # 2️⃣ Set up Docker Buildx (برای قابلیت build بهتر)
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7.0.x'
 
-      # 3️⃣ نصب Docker Compose (اگر لازم باشد)
-      - name: Install Docker Compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
+      - name: Build
+        run: dotnet publish YourProject/YourProject.csproj -c Release -o ./publish
 
-      # 4️⃣ Build و Run کانتینرها
-      - name: Build and run containers
-        run: |
-          docker-compose -f docker-compose.yml up -d --build
+      - name: Copy to server via SSH
+        uses: appleboy/scp-action@v0.1.5
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "./publish/*"
+          target: "/home/youruser/app"
+
+      - name: Restart Docker container
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker stop myapp || true
+            docker rm myapp || true
+            docker run -d -p 80:80 --name myapp yourdockerimage
