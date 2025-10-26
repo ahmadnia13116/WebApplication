@@ -20,7 +20,7 @@ services:
 
   web:
     build:
-      context: .
+      context:  ./WebApplication
       dockerfile: Dockerfile          # نسخه Linux-ready که درست کردیم
       args:
         BUILD_CONFIGURATION: Release
