@@ -1,41 +1,47 @@
-﻿name: CI/CD Docker ASP.NET MVC
+﻿name: CI/CD with Docker Compose
 
+# Trigger workflow on push to main branch or manual trigger
 on:
   push:
     branches:
       - main
+  workflow_dispatch:   # امکان Run دستی از GitHub UI
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      # 1️⃣ Checkout repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '7.0.x'
+      # 2️⃣ Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build
-        run: dotnet publish YourProject/YourProject.csproj -c Release -o ./publish
+      # 3️⃣ Install Docker Compose (اگر لازم باشد)
+      - name: Install Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
 
-      - name: Copy to server via SSH
-        uses: appleboy/scp-action@v0.1.5
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "./publish/*"
-          target: "/home/youruser/app"
+      # 4️⃣ Set environment variables from GitHub Secrets
+      - name: Set environment variables
+        run: |
+          echo "SA_PASSWORD=${{ secrets.SQL_PASSWORD }}" >> $GITHUB_ENV
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> $GITHUB_ENV
 
-      - name: Restart Docker container
-        uses: appleboy/ssh-action@v0.1.5
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            docker stop myapp || true
-            docker rm myapp || true
-            docker run -d -p 80:80 --name myapp yourdockerimage
+      # 5️⃣ Stop previous containers (Cleanup)
+      - name: Stop and remove previous containers
+        run: |
+          docker-compose -f docker-compose.yml down
+
+      # 6️⃣ Build and run containers
+      - name: Build and run containers
+        run: |
+          docker-compose -f docker-compose.yml up -d --build
+
+      # 7️⃣ Show running containers (برای debug)
+      - name: List running containers
+        run: docker ps
