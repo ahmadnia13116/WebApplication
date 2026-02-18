@@ -2,19 +2,18 @@
 
 services:
   web:
-    image: "${IMAGE_APP:-webapp:latest}"   # از ENV یا default استفاده می‌کنه
+    image: "${IMAGE_APP:-webapp:latest}"
     container_name: webapp
     build:
-      context: .
+      context: ./WebApplication
       dockerfile: Dockerfile
       args:
         BUILD_CONFIGURATION: Release
     ports:
-      - "5000:80"       # 80 داخل کانتینر → 5000 روی میزبان
+      - "5000:80"
     environment:
       - DOTNET_RUNNING_IN_CONTAINER=true
       - DOTNET_USE_POLLING_FILE_WATCHER=true
-      # سایر ENV ها را می‌توانی اینجا اضافه کنی
     restart: unless-stopped
     networks:
       - webnet
