@@ -2,13 +2,23 @@
 
 services:
   web:
+    image: "${IMAGE_APP:-webapp:latest}"   # از ENV یا default استفاده می‌کنه
+    container_name: webapp
     build:
-      context: ./WebApplication
+      context: .
       dockerfile: Dockerfile
       args:
         BUILD_CONFIGURATION: Release
-    image: webapp:latest
-    container_name: webapp
     ports:
-      - "5000:80"  # 80 داخل کانتینر → 5000 روی میزبان
-    # اگر نیازی به متغیر محیطی ندارید، این بخش را حذف کنید
+      - "5000:80"       # 80 داخل کانتینر → 5000 روی میزبان
+    environment:
+      - DOTNET_RUNNING_IN_CONTAINER=true
+      - DOTNET_USE_POLLING_FILE_WATCHER=true
+      # سایر ENV ها را می‌توانی اینجا اضافه کنی
+    restart: unless-stopped
+    networks:
+      - webnet
+
+networks:
+  webnet:
+    driver: bridge
