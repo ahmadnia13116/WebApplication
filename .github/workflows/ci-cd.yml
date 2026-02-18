@@ -6,7 +6,7 @@ on:
     branches:
       - master
   workflow_dispatch:   # امکان Run دستی از GitHub UI
-
+  
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
